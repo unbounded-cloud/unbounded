@@ -1,7 +1,7 @@
 unbounded - The Official Unbounded Javascript Client
 ================================================
 
-This module implements simple but full-featured access to the
+This module implements full-featured access to the
 [Unbounded database](https://www.unbounded.cloud/).
 
 For detailed information on methods and parameters, see the
@@ -9,12 +9,12 @@ For detailed information on methods and parameters, see the
 
 # Installation
 
-    npm install unbounded --save
+    npm install @unbounded/unbounded --save
 
 # Example
 
 ```js
-const Unbounded = require('unbounded');
+const Unbounded = require('@unbounded/unbounded');
 
 let client = new Unbounded('aws-us-east-2', 'user@domain.com', 'somepassword');
 
