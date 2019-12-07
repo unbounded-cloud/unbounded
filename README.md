@@ -54,7 +54,7 @@ If the callback is not specified, then the methods return an ES2015 Promise.
 
 Most methods in Unbounded take a number of optional arguments. For convenience, methods
 in this module take one or two common positional arguments and group the rest into an
-optional `options` parameter. Some methods (e.g. `delete` and `deleteWhere`) map to the same
+optional `options` object parameter. Some methods (e.g. `delete` and `deleteWhere`) map to the same
 Unbounded method (`delete`), but allow the user to pass a different positional argument to save
 typing.
 
@@ -132,6 +132,14 @@ let results = await client.wait(taskobj);
 The task object itself can be serialized using JSON, so that if an app terminates or another problem occurs, the task
 can still be waited on by deserializing it later.
 
+If the task is a query and no webhook was specified, then the `files` property of the result object will contain a list
+of URLs with query results.  This object contains a built-in `fetch` method which retrieves the URLs and returns the
+concantenated results as an array:
+
+```js
+let objs = await results.fetch();
+```
+
 ## Bulk Upload
 
 `startUpload` is a convenience method which simplifies importing a large number of objects into an Unbounded database.
@@ -161,7 +169,13 @@ class Client {
 
   listDatabases(cb?): object[]
 
-  wait(task: Task, cb?): Results
+  wait(task: Task, cb?): FileResult | Result
+}
+
+class FileResult {
+  files: string[]
+
+  fetch(cb?): Result
 }
 
 class Database {
