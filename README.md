@@ -82,18 +82,15 @@ db.query(o => o.someproperty === 1);
 It's important to note that because functions are converted to strings, attempting to
 use a global or lexically scoped variable in a callback will result in
 an error when the callback is executed in Unbounded. To re-use a callback with
-different variables, you must pass the function as a string and use the `code`/`vars`
-form of the parameter:
+different variables, you should use the `code`/`bind` form of the parameter:
 
 ```js
-let cb = 'o => o.someproperty === val';
+const myfunc = (val, o) => o.someproperty === val;
 
 db.query({
-  code: cb,
-  vars: {
-    val: 1
-  }
-});
+  code: myfunc,
+  bind: [1],
+}); // queries for someproperty === 1
 ```
 
 ## Async Tasks
