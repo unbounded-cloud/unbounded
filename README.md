@@ -200,6 +200,10 @@ class Database {
 
   setSchema(schema: object, cb?)
 
+  getIndexes(cb?): Array
+
+  setIndexes(indexes: Array, cb?)
+
   deleteDatabase(cb?)
 
   savedQuery(name: string, cb?): SavedQuery
