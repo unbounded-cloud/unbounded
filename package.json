@@ -1,11 +1,12 @@
 {
   "name": "@unbounded/unbounded",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "description": "Client library for the Unbounded database service",
   "main": "index.js",
   "files": [
     "lib",
-    "index.js"
+    "index.js",
+    "index.d.ts"
   ],
   "repository": {
     "type": "git",

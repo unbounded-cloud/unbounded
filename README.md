@@ -159,89 +159,97 @@ await uploader.finish();
 # Class/Method List
 
 ```typescript
-class Client {
-  constructor(region: string, username: string, password: string)
+export default class Unbounded {
+  constructor(region: string, username: string, password: string);
 
-  database(name: string): Database
+  database(name: string): Database;
 
-  listDatabases(cb?): object[]
-
-  wait(task: Task, cb?): FileResult | Result
+  listDatabases(): Promise<object[]>;
+ 
+  wait(task: Task): Promise<FileResult | object[] | undefined>;
 }
 
 class FileResult {
   files: string[]
 
-  fetch(cb?): Result
+  fetch(cb?): object[]
 }
 
 class Database {
-  async: DatabaseAsync
+  async: DatabaseAsync;
 
-  match(match: object, options?: object, cb?): Result
+  match(match?: object, options?: object): Promise<object[]>;
 
-  query(where: Function, options?: object, cb?): Result
+  query(where?: object, options?: object): Promise<object[]>;
 
-  insert(values: object | object[], exists?: Function, options?: object, cb?): Result
+  insert(values: object | object[], exists?: Function | string, options?: object): Promise;
 
-  update(match: object, set: Function, options?: object, cb?): Result
+  update(match: object, set: Function | string, options?: object): Promise;
 
-  updateWhere(where: Function, set: Function, options?: object, cb?): Result
-
-  delete(match: object, options?: object, cb?): Result
-
-  deleteWhere(where: Function, options?: object, cb?): Result
-
-  getKey(cb?, cb?): string | string[]
-
-  setKey(key: string | string[], cb?)
-
-  getSchema(cb?): object
-
-  setSchema(schema: object, cb?)
-
-  getIndexes(cb?): Array
-
-  setIndexes(indexes: Array, cb?)
-
-  deleteDatabase(cb?)
-
-  savedQuery(name: string, cb?): SavedQuery
-
-  listSavedQueries(cb?): object[]
-
-  startUpload(exists?: Function, options?: object): Uploader
+  updateWhere(where: Function | string, set: Function | string, options?: object): Promise;
+ 
+  delete(match?: object, options?: object): Promise;
+ 
+  deleteWhere(where?: Function | string, options?: object): Promise;
+ 
+  getKey(): Promise<any>;
+ 
+  setKey(key: string | string[]) : Promise;
+ 
+  getSchema(): Promise<object>;
+ 
+  setSchema(schema: object) : Promise;
+ 
+  getIndexes(): Promise<Array>;
+ 
+  setIndexes(indexes: Array) : Promise;
+ 
+  deleteDatabase() : Promise;
+ 
+  savedQuery(name: string): SavedQuery;
+ 
+  listSavedQueries(): Promise<object[]>;
+ 
+  startUpload(exists?: Function | string, options?: object): Uploader;
 }
 
+class Task {}
+
 class DatabaseAsync {
-  match(match: object, options?: object, cb?): Task
+  match(match?: object, options?: object): Promise<Task>;
 
-  query(where: Function, options?: object, cb?): Task
+  query(where?: Function | string, options?: object): Promise<Task>;
 
-  insert(values: object | object[], exists?: Function, options?: object, cb?): Task
+  insert(values: object | object[], exists?: Function | string, options?: object): Promise<Task>;
 
-  update(match: object, set: Function, options?: object, cb?): Task
+  update(match: object, set: Function | string, options?: object): Promise<Task>;
 
-  updateWhere(where: Function, set: Function, options?: object, cb?): Task
+  updateWhere(where: Function, set: Function, options?: object): Promise<Task>;
 
-  delete(match: object, options?: object, cb?): Task
+  delete(match: object, options?: object): Promise<Task>;
 
-  deleteWhere(where: Function, options?: object, cb?): Task
+  deleteWhere(where: Function | string, options?: object): Promise<Task>;
 }
 
 class SavedQuery {
-  async: SavedQueryAsync
+  async: SavedQueryAsync;
 
-  match(match: object, options?: object, cb?): Result
+  match(match?: object, options?: object): Promise<object[]>;
 
-  query(where: Function, options?: object, cb?): Result
+  query(where?: Function | string, options?: object): Promise<object[]>;
 
-  deleteSavedQuery(cb?)
+  deleteSavedQuery(): Promise;
 }
 
 class SavedQueryAsync {
-  match(match: object, options?: object, cb?): Task
+  match(match?: object, options?: object): Promise<Task>;
 
-  query(where: Function, options?: object, cb?): Task
+  query(where?: Function | string, options?: object): Promise<Task>;
+}
+
+class Uploader {
+  add(value: object) : Promise;
+
+  finish(): Promise;
 }
 ```
