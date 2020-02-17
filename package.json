@@ -1,6 +1,6 @@
 {
   "name": "@unbounded/unbounded",
-  "version": "0.9.10",
+  "version": "0.9.11",
   "description": "Client library for the Unbounded database service",
   "main": "index.js",
   "files": [
