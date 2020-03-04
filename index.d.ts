@@ -3,13 +3,15 @@ declare module '@unbounded/unbounded';
 export = Unbounded;
 
 declare class Unbounded {
-  constructor(region: string, username: string, password: string);
+  constructor(region: string, username: string, password?: string);
 
   database(name: string): Database;
 
   listDatabases(): Promise<object[]>;
  
   wait(task: Task): Promise<any>;
+
+  setSubToken(subtoken: string, type: string): void;
 }
 
 declare class Database {

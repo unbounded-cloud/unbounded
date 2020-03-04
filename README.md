@@ -156,6 +156,59 @@ for (let i in array) {
 await uploader.finish();
 ```
 
+## Frontend Database Access
+
+This module can be used to access Unbounded directly from an app or web browser. You can use it with React/Angular/Vue
+or any other frontend framework.
+
+The main difference between server-side and browser/frontend usage is authentication. In the example at the top of this
+page, we created a client object by passing our Unbounded account username and password to the Unbounded() constructor:
+
+```js
+let client = new Unbounded('aws-us-east-2', 'user@domain.com', 'somepassword');
+```
+
+However, when accessing the db from a browser, we should never use our account password, as our users will be able to
+obtain it and gain unfettered access to our account. Rather, we need to use an authentication provider to tie our users
+to an identity, and then set a signed identity token for Unbounded to uniquely identify our user. Here's an example using
+Google as our authentication provider:
+
+```html
+<!-- sample code taken from https://developers.google.com/identity/sign-in/web/sign-in -->
+<head>
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+  <meta name="google-signin-client_id" content="YOUR_CLIENT_ID.apps.googleusercontent.com">
+</head>
+<body>
+<div class="g-signin2" data-onsuccess="onSignIn"></div>
+<script>
+  // pass only your username here, not your password
+  var client = new Unbounded('aws-us-east-2', 'user@domain.com');
+
+  function onSignIn(googleUser) {
+    var id_token = googleUser.getAuthResponse().id_token;
+
+    var token_type = 'google';
+
+    // set the signed in Google user as active in the db client
+    client.setSubToken(id_token, token_type);
+
+    // now when we make calls to our client, the authentication will
+    // use the user's Google account credentials
+    client.database('mydatabase').match({something: true}).then(...);
+  }
+</script>
+</body>
+```
+
+The key here is the call to `client.setSubToken`, which will ensure that the Google `id_token`
+is used to authenticate all database queries. If you wish to sign out the user later, you can
+remove their user token from the client by calling `client.setSubToken(null)`.
+
+In order for this to work, you must configure your database's `users` property with your app's
+Google client ID. More information (including using other authentication providers) is available
+in the [Unbounded Frontend Access Guide](https://admin.unbounded.cloud/docs/#/frontend).
+
 # Class/Method List
 
 ```typescript
@@ -167,6 +220,8 @@ export default class Unbounded {
   listDatabases(): Promise<object[]>;
  
   wait(task: Task): Promise<FileResult | object[] | undefined>;
+
+  setSubToken(subtoken: string, type: string);
 }
 
 class FileResult {
