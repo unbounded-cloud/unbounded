@@ -21,7 +21,7 @@ let client = new Unbounded('aws-us-east-2', 'user@domain.com', 'somepassword');
 let db = client.database('mydatabase');
 
 (async () => {
-  let results = await db.insert({
+  let results = await db.add({
     property: 'value'
   });
 
@@ -37,31 +37,26 @@ let db = client.database('mydatabase');
 
 # Conventions and Notes
 
-## Callbacks / Promises
+## Method call styles
 
-All methods which communicate with the database can take an optional callback as their last argument,
-if users prefer that style of call:
+The Unbounded web service takes parameters in the form of JSON objects. This module lets you pass
+a raw JSON object to the methods `query`, `insert`, `update` and `delete`:
 
 ```js
-client.listDatabases((err, results) => {
-  // process results
+client.database('mydatabase').query({match: {}, limit: 1}).then(results => {
+  // ...
 });
 ```
 
-If the callback is not specified, then the methods return an ES2015 Promise.
-
-## Option Parameters
-
-Most methods in Unbounded take a number of optional arguments. For convenience, methods
-in this module take one or two common positional arguments and group the rest into an
-optional `options` object parameter. Some methods (e.g. `delete` and `deleteWhere`) map to the same
-Unbounded method (`delete`), but allow the user to pass a different positional argument to save
-typing.
-
-Here's an example of passing an optional argument (`limit`):
+However, in normal circumstances it is cleaner to use the "builder" style syntax,
+which is available by passing no arguments to the `query`, `insert`, etc. methods. In this style,
+you can chain options together, then end the chain with a call to `send`, which returns a Promise:
 
 ```js
-client.database('mydatabase').match({}, {limit: 1}, (err, results) => {
+client.database('mydatabase').query()
+                             .match({})
+                             .limit(1)
+                             .send().then(results => {
   // ...
 });
 ```
@@ -76,22 +71,47 @@ servers:
 
 ```js
 let db = client.database('mydatabase');
-db.query(o => o.someproperty === 1);
+await db.query().where(o => o.someproperty === 1).send();
 ```
 
 It's important to note that because functions are converted to strings, attempting to
 use a global or lexically scoped variable in a callback will result in
 an error when the callback is executed in Unbounded. To re-use a callback with
-different variables, you should use the `code`/`bind` form of the parameter:
+different variables, you should call the `bind` method after adding your function
+parameter. `bind` accepts any number of values, which will be passed as the first
+parameters to your function when it is executed on the server:
 
 ```js
 const myfunc = (val, o) => o.someproperty === val;
 
-db.query({
-  code: myfunc,
-  bind: [1],
-}); // queries for someproperty === 1
+// queries for someproperty === 1
+await db.query().where(myfunc).bind(1).send();
 ```
+
+## Simple Aggregations
+
+Unbounded lets users specify aggregate functions in terms of `map` and `reduce` functions,
+which are analagous to the corresponding calls on the Javascript built-in `Array` class. Because
+these functions can be more difficult to write than the simple aggregation functions built in to SQL,
+this module contains some shortcuts which let you easiy compute various aggregations of a single property.
+For example:
+
+```js
+await db.query()
+        .sum('counter')
+        .send()
+```
+
+Will compute the sum of the `counter` properties on the objects in db. This call is shorthand for:
+
+```js
+await db.query()
+        .map(o => ({sum: o.counter})
+        .reduce((a, b) => ({sum: a.sum + b.sum})
+        .send()
+```
+
+The other built-in aggregation shortcuts are: `count`, `avg`, `min`, `max`, `some`, and `every`.
 
 ## Async Tasks
 
@@ -112,7 +132,7 @@ Optionally, clients can manage async tasks manually by calling methods on the `a
 
 ```js
 let db = client.database('mydatabase');
-let taskobj = await db.async.query(o => o.someproperty === 1);
+let taskobj = await db.async.query().where(o => o.someproperty === 1).send();
 ```
 
 This enables users to write to a database and continue processing without waiting for the write to complete. If
@@ -121,7 +141,7 @@ completes:
 
 ```js
 let db = client.database('mydatabase');
-let taskobj = await db.async.query(o => o.someproperty === 1);
+let taskobj = await db.async.query().where(o => o.someproperty === 1).send();
 
 let results = await client.wait(taskobj);
 ```
@@ -130,7 +150,7 @@ The task object itself can be serialized using JSON, so that if an app terminate
 can still be waited on by deserializing it later.
 
 If the task is a query and no webhook was specified, then the `files` property of the result object will contain a list
-of URLs with query results.  This object contains a built-in `fetch` method which retrieves the URLs and returns the
+of URLs with query results. This object contains a built-in `fetch` method which retrieves the URLs and returns the
 concantenated results as an array:
 
 ```js
@@ -235,17 +255,23 @@ class Database {
 
   match(match?: object, options?: object): Promise<object[]>;
 
-  query(where?: object, options?: object): Promise<object[]>;
+  query(): QueryBuilder;
 
-  insert(values: object | object[], exists?: Function | string, options?: object): Promise;
+  query(options: object): Promise<object[]>;
 
-  update(match: object, set: Function | string, options?: object): Promise;
+  add(values: object | object[], options?: object): Promise;
 
-  updateWhere(where: Function | string, set: Function | string, options?: object): Promise;
- 
-  delete(match?: object, options?: object): Promise;
- 
-  deleteWhere(where?: Function | string, options?: object): Promise;
+  insert(): InsertBuilder;
+
+  insert(options: object): Promise;
+
+  update(): UpdateBuilder;
+
+  update(options: object): Promise;
+
+  delete(): DeleteBuilder;
+
+  delete(options: object): Promise;
  
   getKey(): Promise<any>;
  
@@ -268,23 +294,29 @@ class Database {
   startUpload(exists?: Function | string, options?: object): Uploader;
 }
 
-class Task {}
-
 class DatabaseAsync {
   match(match?: object, options?: object): Promise<Task>;
 
-  query(where?: Function | string, options?: object): Promise<Task>;
+  query(): AsyncQueryBuilder;
 
-  insert(values: object | object[], exists?: Function | string, options?: object): Promise<Task>;
+  query(options: object): Promise<Task>;
 
-  update(match: object, set: Function | string, options?: object): Promise<Task>;
+  add(values: object | object[], options?: object): Promise<Task>;
 
-  updateWhere(where: Function, set: Function, options?: object): Promise<Task>;
+  insert(): AsyncInsertBuilder;
 
-  delete(match: object, options?: object): Promise<Task>;
+  insert(options: object): Promise<Task>;
 
-  deleteWhere(where: Function | string, options?: object): Promise<Task>;
+  update(): AsyncUpdateBuilder;
+
+  update(options: object): Promise<Task>;
+
+  delete(): AsyncDeleteBuilder;
+
+  delete(options: object): Promise<Task>;
 }
+
+class Task {}
 
 class SavedQuery {
   async: SavedQueryAsync;
@@ -299,12 +331,88 @@ class SavedQuery {
 class SavedQueryAsync {
   match(match?: object, options?: object): Promise<Task>;
 
-  query(where?: Function | string, options?: object): Promise<Task>;
+  query(): AsyncQueryBuilder;
+
+  query(options: object): Promise<Task>;
 }
 
 class Uploader {
   add(value: object) : Promise;
 
   finish(): Promise;
+}
+
+class QueryBuilder {
+  match(props: object): QueryBuilder
+
+  where(func: Function | string): QueryBuilder
+
+  bind(...args: any[]): QueryBuilder
+
+  map(func: Function | string): QueryBuilder
+
+  filter(func: Function | string): QueryBuilder
+
+  reduce(func: Function | string): QueryBuilder
+
+  sort(opts: object): QueryBuilder
+
+  limit(count: number): QueryBuilder
+
+  single(): QueryBuilder
+
+  webhook(url: string): QueryBuilder
+
+  count(): QueryBuilder
+
+  sum(prop: string): QueryBuilder
+
+  avg(prop: string): QueryBuilder
+
+  min(prop: string): QueryBuilder
+
+  max(prop: string): QueryBuilder
+
+  some(prop: string): QueryBuilder
+
+  every(prop: string): QueryBuilder
+
+  send(): Promise<object[]>
+}
+
+class InsertBuilder {
+  values(data: object | object[]): InsertBuilder
+
+  exists(func: Function | string): InsertBuilder
+
+  bind(...args: any[]): InsertBuilder
+
+  send(): Promise
+}
+
+class UpdateBuilder {
+  match(props: object): UpdateBuilder
+
+  where(func: Function | string): UpdateBuilder
+
+  set(func: Function | string): UpdateBuilder
+
+  bind(...args: any[]): UpdateBuilder
+
+  single(): UpdateBuilder
+
+  send(): Promise
+}
+
+class DeleteBuilder {
+  match(props: object): DeleteBuilder
+
+  where(func: Function | string): DeleteBuilder
+
+  bind(...args: any[]): DeleteBuilder
+
+  single(): DeleteBuilder
+
+  send(): Promise
 }
 ```
