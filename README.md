@@ -106,8 +106,8 @@ Will compute the sum of the `counter` properties on the objects in db. This call
 
 ```js
 await db.query()
-        .map(o => ({sum: o.counter})
-        .reduce((a, b) => ({sum: a.sum + b.sum})
+        .map(o => ({sum: o.counter}))
+        .reduce((a, b) => ({sum: a.sum + b.sum}))
         .send()
 ```
 
