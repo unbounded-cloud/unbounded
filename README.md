@@ -1,6 +1,8 @@
 unbounded - The Official Unbounded Javascript Client
 ================================================
 
+** The Unbounded database is currently in hiatus. Thank you to everyone that used our service, we hope you'll join us again for our next upgraded iteration.**
+
 This module implements full-featured access to the
 [Unbounded database](https://www.unbounded.cloud/).
 
